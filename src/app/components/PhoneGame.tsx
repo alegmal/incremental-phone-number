@@ -7,7 +7,7 @@ const NUM_SLOTS = 10;
 const BALL_R = 22;
 const SPAWN_MS = 1400;
 const GRAVITY = 1.2;
-const WIND_MAX = 0.0012;
+const WIND_MAX = 0.012;
 const BALL_COLORS = ["#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1","#54A0FF","#5F27CD","#EE5A24","#009432","#C4E538"];
 
 interface Ball {
@@ -276,7 +276,7 @@ export default function PhoneGame() {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#0d1117]">
-      <canvas ref={canvasRef} className="absolute inset-0" />
+      <canvas ref={canvasRef} className="absolute inset-0" style={{ background: "#ffffff" }} />
       <FanCursor mouseRef={mouseRef} />
       {completed && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
