@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מספר טלפון מצטבר</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 2rem;
+      letter-spacing: 0.02em;
+    }
+
+    .display {
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #111;
+      background: #f5f5f5;
+      border: 2px solid #ddd;
+      border-radius: 16px;
+      padding: 0.6em 1.4em;
+      min-width: 320px;
+      text-align: center;
+      margin-bottom: 2.5rem;
+      font-family: 'Courier New', monospace;
+      cursor: default;
+    }
+
+    .mode-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .mode-btn {
+      font-size: 2rem;
+      font-weight: 900;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid #ccc;
+      background: #f0f0f0;
+      color: #555;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mode-btn.active-add {
+      background: #22c55e;
+      border-color: #16a34a;
+      color: #fff;
+      box-shadow: 0 0 0 4px #bbf7d0;
+    }
+
+    .mode-btn.active-sub {
+      background: #ef4444;
+      border-color: #dc2626;
+      color: #fff;
+      box-shadow: 0 0 0 4px #fecaca;
+    }
+
+    .mode-btn:hover:not(.active-add):not(.active-sub) {
+      background: #e0e0e0;
+      border-color: #aaa;
+    }
+
+    .increment-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      max-width: 520px;
+    }
+
+    .inc-btn {
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 0.6em 1.2em;
+      border-radius: 10px;
+      border: 2px solid #3b82f6;
+      background: #eff6ff;
+      color: #1d4ed8;
+      cursor: pointer;
+      transition: all 0.12s;
+      min-width: 80px;
+    }
+
+    .inc-btn:hover {
+      background: #3b82f6;
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px #3b82f640;
+    }
+
+    .inc-btn:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .mode-label {
+      font-size: 0.95rem;
+      color: #888;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>הקלידו מספר טלפון</h1>
+
+  <div class="display" id="display">050-0000000</div>
+
+  <p class="mode-label" id="mode-label">מצב: חיבור ➕</p>
+
+  <div class="mode-row">
+    <button class="mode-btn active-add" id="btn-add" onclick="setMode('add')" title="חיבור">+</button>
+    <button class="mode-btn" id="btn-sub" onclick="setMode('sub')" title="חיסור">−</button>
+  </div>
+
+  <div class="increment-row">
+    <button class="inc-btn" onclick="apply(1)">1</button>
+    <button class="inc-btn" onclick="apply(10)">10</button>
+    <button class="inc-btn" onclick="apply(100)">100</button>
+    <button class="inc-btn" onclick="apply(1000)">1,000</button>
+    <button class="inc-btn" onclick="apply(10000)">10,000</button>
+    <button class="inc-btn" onclick="apply(100000)">100,000</button>
+  </div>
+
+  <script>
+    let value = 500000000; // starts at 050-0000000
+    let mode = 'add';
+
+    const MIN = 0;
+    const MAX = 9999999999;
+
+    function format(n) {
+      const s = String(n).padStart(10, '0');
+      return s.slice(0, 3) + '-' + s.slice(3);
+    }
+
+    function render() {
+      document.getElementById('display').textContent = format(value);
+    }
+
+    function setMode(m) {
+      mode = m;
+      const addBtn = document.getElementById('btn-add');
+      const subBtn = document.getElementById('btn-sub');
+      const label = document.getElementById('mode-label');
+      addBtn.className = 'mode-btn' + (m === 'add' ? ' active-add' : '');
+      subBtn.className = 'mode-btn' + (m === 'sub' ? ' active-sub' : '');
+      label.textContent = m === 'add' ? 'מצב: חיבור ➕' : 'מצב: חיסור ➖';
+    }
+
+    function apply(n) {
+      if (mode === 'add') {
+        value = Math.min(MAX, value + n);
+      } else {
+        value = Math.max(MIN, value - n);
+      }
+      render();
+    }
+
+    // Block all keyboard input and paste on the page
+    document.addEventListener('keydown', e => e.preventDefault());
+    document.addEventListener('paste', e => e.preventDefault());
+
+    render();
+  </script>
+</body>
+</html>
