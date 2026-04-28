@@ -1,189 +1,427 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>מספר טלפון מצטבר</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      min-height: 100vh;
-      background: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      user-select: none;
-    }
-
-    h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #111;
-      margin-bottom: 2rem;
-      letter-spacing: 0.02em;
-    }
-
-    .display {
-      font-size: 3.5rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      color: #111;
-      background: #f5f5f5;
-      border: 2px solid #ddd;
-      border-radius: 16px;
-      padding: 0.6em 1.4em;
-      min-width: 320px;
-      text-align: center;
-      margin-bottom: 2.5rem;
-      font-family: 'Courier New', monospace;
-      cursor: default;
-    }
-
-    .mode-row {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1.8rem;
-    }
-
-    .mode-btn {
-      font-size: 2rem;
-      font-weight: 900;
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      border: 3px solid #ccc;
-      background: #f0f0f0;
-      color: #555;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .mode-btn.active-add {
-      background: #22c55e;
-      border-color: #16a34a;
-      color: #fff;
-      box-shadow: 0 0 0 4px #bbf7d0;
-    }
-
-    .mode-btn.active-sub {
-      background: #ef4444;
-      border-color: #dc2626;
-      color: #fff;
-      box-shadow: 0 0 0 4px #fecaca;
-    }
-
-    .mode-btn:hover:not(.active-add):not(.active-sub) {
-      background: #e0e0e0;
-      border-color: #aaa;
-    }
-
-    .increment-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      justify-content: center;
-      max-width: 520px;
-    }
-
-    .inc-btn {
-      font-size: 1.1rem;
-      font-weight: 700;
-      padding: 0.6em 1.2em;
-      border-radius: 10px;
-      border: 2px solid #3b82f6;
-      background: #eff6ff;
-      color: #1d4ed8;
-      cursor: pointer;
-      transition: all 0.12s;
-      min-width: 80px;
-    }
-
-    .inc-btn:hover {
-      background: #3b82f6;
-      color: #fff;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px #3b82f640;
-    }
-
-    .inc-btn:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
-
-    .mode-label {
-      font-size: 0.95rem;
-      color: #888;
-      margin-bottom: 0.5rem;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Phone Number Rain</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
+  canvas { display: block; cursor: none; }
+  #resetBtn {
+    position: fixed;
+    top: 14px; right: 14px;
+    padding: 7px 18px;
+    background: #1a1a2e; color: #fff;
+    border: none; border-radius: 8px;
+    font: bold 13px/1.4 system-ui, sans-serif;
+    cursor: pointer; z-index: 10;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.04em;
+  }
+  #resetBtn:hover  { background: #3a3a5c; }
+  #resetBtn:active { transform: scale(0.95); }
+</style>
 </head>
 <body>
-  <h1>הקלידו מספר טלפון</h1>
+<canvas id="c"></canvas>
+<button id="resetBtn">↺  Reset</button>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   PHONE NUMBER RAIN  —  canvas physics game
+   ═══════════════════════════════════════════════════════════════════════ */
 
-  <div class="display" id="display">050-0000000</div>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
 
-  <p class="mode-label" id="mode-label">מצב: חיבור ➕</p>
+let W = 0, H = 0;
 
-  <div class="mode-row">
-    <button class="mode-btn active-add" id="btn-add" onclick="setMode('add')" title="חיבור">+</button>
-    <button class="mode-btn" id="btn-sub" onclick="setMode('sub')" title="חיסור">−</button>
-  </div>
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  computeLayout();
+}
+window.addEventListener('resize', resize);
 
-  <div class="increment-row">
-    <button class="inc-btn" onclick="apply(1)">1</button>
-    <button class="inc-btn" onclick="apply(10)">10</button>
-    <button class="inc-btn" onclick="apply(100)">100</button>
-    <button class="inc-btn" onclick="apply(1000)">1,000</button>
-    <button class="inc-btn" onclick="apply(10000)">10,000</button>
-    <button class="inc-btn" onclick="apply(100000)">100,000</button>
-  </div>
+/* ── constants ──────────────────────────────────────────────────────── */
+const SLOT_COUNT = 10;
+const R          = 22;   // bubble radius (px)
+const GRAVITY    = 0.22;
+const SPAWN_RATE = 38;   // frames between spawns
 
-  <script>
-    let value = 500000000; // starts at 050-0000000
-    let mode = 'add';
+const DIGIT_COLORS = [
+  '#e74c3c', '#e67e22', '#f1c40f', '#27ae60', '#16a085',
+  '#2980b9', '#8e44ad', '#d81b60', '#00838f', '#558b2f'
+];
 
-    const MIN = 0;
-    const MAX = 9999999999;
+/* ── layout ─────────────────────────────────────────────────────────── */
+let box     = {};      // { x, y, w, h }
+let slotPos = [];      // [{x, y}, …]  — centre of each slot
+let dashX   = 0;       // x-centre for the '–' separator
 
-    function format(n) {
-      const s = String(n).padStart(10, '0');
-      return s.slice(0, 3) + '-' + s.slice(3);
+function computeLayout() {
+  const bw = Math.round(W / 3);
+  const bh = 58;
+  box = { x: (W - bw) / 2, y: Math.round(H * 0.65), w: bw, h: bh };
+
+  /* distribute 10 slots across bw, leaving a small gap between slot 2
+     and slot 3 for the visual dash  */
+  const dashGap = Math.round(bw * 0.07);
+  const slotW   = (bw - dashGap) / SLOT_COUNT;
+
+  slotPos = [];
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    const extra = i < 3 ? 0 : dashGap;
+    slotPos.push({
+      x: box.x + slotW * (i + 0.5) + extra,
+      y: box.y + bh / 2
+    });
+  }
+  dashX = (slotPos[2].x + slotPos[3].x) / 2;
+}
+
+/* ── game state ─────────────────────────────────────────────────────── */
+let slots     = new Array(SLOT_COUNT).fill(null);
+let bubbles   = [];
+let confetti  = [];
+let complete  = false;
+let celebT    = 0;
+let spawnT    = 0;
+
+/* ── mouse / fan ───────────────────────────────────────────────────── */
+let mx = -9999, my = -9999;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+let fanSpin = 0;
+
+/* ── bubble factory ─────────────────────────────────────────────────── */
+function spawnBubble() {
+  const margin = R + 8;
+  const side   = Math.random() < 0.5;
+  const x      = side
+    ? margin + Math.random() * (W * 0.30 - margin * 2)
+    : W * 0.70 + margin + Math.random() * (W * 0.30 - margin * 2);
+  const d = Math.floor(Math.random() * 10);
+  bubbles.push({
+    x, y: -R - 4,
+    vx: (Math.random() - 0.5) * 2.8,
+    vy: 0.5 + Math.random() * 1.6,
+    d,
+    color: DIGIT_COLORS[d],
+    snapped: false,
+    slot: -1
+  });
+}
+
+/* ── confetti factory ───────────────────────────────────────────────── */
+function launchConfetti() {
+  for (let i = 0; i < 90; i++) {
+    confetti.push({
+      x:    box.x + Math.random() * box.w,
+      y:    box.y,
+      vx:   (Math.random() - 0.5) * 14,
+      vy:  -(4 + Math.random() * 11),
+      w:    5 + Math.random() * 9,
+      h:    3 + Math.random() * 6,
+      rot:  Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.35,
+      color: DIGIT_COLORS[Math.floor(Math.random() * DIGIT_COLORS.length)],
+      life:  1.0
+    });
+  }
+}
+
+/* ── update ─────────────────────────────────────────────────────────── */
+function update() {
+  fanSpin += 0.22;
+
+  /* wind: direction depends on which half the mouse is on;
+     magnitude grows as mouse approaches the screen centre */
+  const half  = W / 2;
+  const dist  = Math.abs(mx - half);            // 0 = centre, half = edge
+  const t     = Math.max(0, 1 - dist / half);   // 1 at centre, 0 at edge
+  const windF = (mx < half ? 1 : -1) * (0.04 + t * 0.14);
+
+  /* spawn */
+  if (!complete && ++spawnT >= SPAWN_RATE) { spawnBubble(); spawnT = 0; }
+
+  /* bubbles */
+  const dead = [];
+  for (let i = 0; i < bubbles.length; i++) {
+    const b = bubbles[i];
+    if (b.snapped) continue;
+
+    /* physics */
+    b.vy  += GRAVITY;
+    b.vx  += windF;
+    b.vx   = Math.max(-11, Math.min(11, b.vx)) * 0.988;  // clamp + drag
+    b.x   += b.vx;
+    b.y   += b.vy;
+
+    /* side-wall elastic bounce */
+    if (b.x - R < 0)  { b.x = R;     b.vx =  Math.abs(b.vx) * 0.70; }
+    if (b.x + R > W)  { b.x = W - R; b.vx = -Math.abs(b.vx) * 0.70; }
+
+    /* classify position relative to the digit box */
+    const inXSpan = b.x > box.x && b.x < box.x + box.w;
+    const inYSpan = b.y > box.y && b.y < box.y + box.h;
+
+    /* bounce off box TOP wall — only if centre is still above the box */
+    if (inXSpan && !inYSpan && b.y + R >= box.y && b.y < box.y && b.vy > 0) {
+      b.y   = box.y - R;
+      b.vy *= -0.52;
     }
 
-    function render() {
-      document.getElementById('display').textContent = format(value);
-    }
-
-    function setMode(m) {
-      mode = m;
-      const addBtn = document.getElementById('btn-add');
-      const subBtn = document.getElementById('btn-sub');
-      const label = document.getElementById('mode-label');
-      addBtn.className = 'mode-btn' + (m === 'add' ? ' active-add' : '');
-      subBtn.className = 'mode-btn' + (m === 'sub' ? ' active-sub' : '');
-      label.textContent = m === 'add' ? 'מצב: חיבור ➕' : 'מצב: חיסור ➖';
-    }
-
-    function apply(n) {
-      if (mode === 'add') {
-        value = Math.min(MAX, value + n);
-      } else {
-        value = Math.max(MIN, value - n);
+    /* enter box from the sides (or from above if slipped past top) */
+    if (inXSpan && inYSpan) {
+      const free = slots.indexOf(null);
+      if (free !== -1) {
+        slots[free] = b.d;
+        b.snapped   = true;
+        b.slot      = free;
+        if (slots.every(s => s !== null)) {
+          complete = true;
+          celebT   = 280;
+          launchConfetti();
+        }
       }
-      render();
+      /* if box full, fall through — bubble continues downward */
     }
 
-    // Block all keyboard input and paste on the page
-    document.addEventListener('keydown', e => e.preventDefault());
-    document.addEventListener('paste', e => e.preventDefault());
+    if (b.y - R > H) dead.push(i);
+  }
+  for (let i = dead.length - 1; i >= 0; i--) bubbles.splice(dead[i], 1);
 
-    render();
-  </script>
+  /* confetti */
+  for (const p of confetti) {
+    p.vy  += 0.40;
+    p.x   += p.vx;
+    p.y   += p.vy;
+    p.rot += p.rotV;
+    p.life -= 0.013;
+  }
+  confetti = confetti.filter(p => p.life > 0 && p.y < H + 30);
+
+  if (complete && celebT > 0) celebT--;
+}
+
+/* ── draw helpers ───────────────────────────────────────────────────── */
+function drawBubble(x, y, r, color, digit) {
+  /* shadow */
+  ctx.shadowColor   = 'rgba(0,0,0,0.18)';
+  ctx.shadowBlur    = 10;
+  ctx.shadowOffsetY = 4;
+
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur  = 0;
+  ctx.shadowOffsetY = 0;
+
+  /* gloss highlight */
+  ctx.beginPath();
+  ctx.arc(x - r * 0.27, y - r * 0.27, r * 0.36, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.38)';
+  ctx.fill();
+
+  /* digit */
+  ctx.fillStyle    = '#fff';
+  ctx.font         = `bold ${Math.round(r * 1.0)}px Arial, sans-serif`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(digit, x, y + 1);
+}
+
+/* ── draw scenes ─────────────────────────────────────────────────────── */
+function drawSpawnZones() {
+  ctx.fillStyle = 'rgba(100,160,255,0.038)';
+  ctx.fillRect(0, 0, W * 0.30, H);
+  ctx.fillRect(W * 0.70, 0, W * 0.30, H);
+}
+
+function drawBox() {
+  ctx.save();
+
+  /* top wall */
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth   = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(box.x, box.y);
+  ctx.lineTo(box.x + box.w, box.y);
+  ctx.stroke();
+
+  /* bottom wall */
+  ctx.beginPath();
+  ctx.moveTo(box.x, box.y + box.h);
+  ctx.lineTo(box.x + box.w, box.y + box.h);
+  ctx.stroke();
+
+  /* opening arrows (tiny visual cues on left & right) */
+  ctx.strokeStyle = '#ccc';
+  ctx.lineWidth   = 1.5;
+  const arrowSize = 7;
+  const ay = box.y + box.h / 2;
+  /* left opening → point left */
+  ctx.beginPath();
+  ctx.moveTo(box.x + arrowSize, ay - arrowSize / 2);
+  ctx.lineTo(box.x,             ay);
+  ctx.lineTo(box.x + arrowSize, ay + arrowSize / 2);
+  ctx.stroke();
+  /* right opening → point right */
+  ctx.beginPath();
+  ctx.moveTh(box.x + box.w - arrowSize, ay - arrowSize / 2);
+  ctx.lineTo(box.x + box.w,             ay);
+  ctx.lineTo(box.x + box.w - arrowSize, ay + arrowSize / 2);
+  ctx.stroke();
+
+  /* dash separator */
+  ctx.fillStyle    = '#555';
+  ctx.font         = 'bold 22px monospace';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('–', dashX, box.y + box.h / 2);
+
+  /* empty slot underscores */
+  ctx.font      = '20px monospace';
+  ctx.fillStyle = '#d4d4d4';
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    if (slots[i] === null) {
+      ctx.fillText('_', slotPos[i].x, slotPos[i].y + 7);
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawBubbles() {
+  for (const b of bubbles) {
+    if (b.snapped) {
+      const sp = slotPos[b.slot];
+      drawBubble(sp.x, sp.y, R * 0.80, b.color, b.d);
+    } else {
+      drawBubble(b.x, b.y, R, b.color, b.d);
+    }
+  }
+}
+
+function drawFan() {
+  if (mx < -999) return;
+  ctx.save();
+  ctx.translate(mx, my);
+
+  /* rotate so the fan "faces" the direction it blows:
+     mouse left → blows right → dir = 0
+     mouse right → blows left → dir = π                */
+  const dir = mx < W / 2 ? 0 : Math.PI;
+  ctx.rotate(dir);
+
+  /* outer ring */
+  ctx.strokeStyle = 'rgba(80,80,80,0.35)';
+  ctx.lineWidth   = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 15, 0, Math.PI * 2);
+  ctx.stroke();
+
+  /* spinning blades */
+  ctx.save();
+  ctx.rotate(fanSpin);
+  for (let i = 0; i < 4; i++) {
+    ctx.save();
+    ctx.rotate(i * Math.PI / 2);
+    ctx.fillStyle = 'rgba(52, 120, 220, 0.85)';
+    ctx.beginPath();
+    ctx.ellipse(0, -10, 4.5, 8.5, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  /* centre hub */
+  ctx.fillStyle = '#1a1a2e';
+  ctx.beginPath();
+  ctx.arc(0, 0, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* handle — points AWAY from the blow direction (left in local space) */
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth   = 5;
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-3, 0);
+  ctx.lineTo(-20, 0);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawConfetti() {
+  for (const p of confetti) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life * 1.1);
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawComplete() {
+  if (!complete) return;
+  const alpha = Math.min(1, (280 - celebT + 40) / 40);
+
+  /* pulsing background wash */
+  const pulse = (Math.sin(celebT * 0.18) + 1) / 2;
+  ctx.fillStyle = `rgba(255, 245, 100, ${pulse * 0.12})`;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.globalAlpha  = alpha;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor  = 'rgba(0,0,0,0.18)';
+  ctx.shadowBlur   = 18;
+  ctx.font         = `bold ${Math.round(Math.min(W * 0.045, 54))}px system-ui, sans-serif`;
+  ctx.fillStyle    = '#27ae60';
+  ctx.fillText('🎉  Phone number complete!  🎉', W / 2, H * 0.28);
+  ctx.restore();
+}
+
+/* ── main loop ───────────────────────────────────────────────────────── */
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  drawSpawnZones();
+  drawBox();
+  drawConfetti();
+  drawBubbles();
+  drawFan();
+  drawComplete();
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+/* ── reset ───────────────────────────────────────────────────────────── */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  slots    = new Array(SLOT_COUNT).fill(null);
+  bubbles  = [];
+  confetti = [];
+  complete = false;
+  celebT   = 0;
+  spawnT   = 0;
+});
+
+/* ── boot ────────────────────────────────────────────────────────────── */
+resize();
+loop();
+</script>
 </body>
 </html>
