@@ -114,7 +114,6 @@ export default function PhoneGame() {
         label: `ball-${digit}-${spawnCountRef.current}`,
       });
       Matter.World.add(world, body);
-      Matter.Body.setVelocity(body, { x, y: vy });
       Matter.Body.setVelocity(body, { x: vx, y: vy });
       ballsRef.current.push({ body, digit, color });
       spawnCountRef.current++;
@@ -135,7 +134,7 @@ export default function PhoneGame() {
 
         const bx = ball.body.position.x;
         const slotIdx = Math.floor((bx - slotX) / slotW);
-        if (slotIdx >= 0 && slotIdx < NUM_SLOTS && ball.body.position.y > slotY - 60) {
+        if (slotIdx >= 0 && slotIdx < NUM_SLOTS && ball.body.position.y > slotY - 60 && ball.body.velocity.y > 0) {
           if (slotsRef.current[slotIdx] === null) {
             slotsRef.current[slotIdx] = ball.digit;
             const newSlots = [...slotsRef.current] as (number | null)[];
@@ -201,7 +200,7 @@ export default function PhoneGame() {
           ctx.font = "bold 22px monospace";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("-", sx - slotW * 0.25, slotY - BALL_R);
+          ctx.fillText("-", sx, slotY - BALL_R);
         }
 
         ctx.strokeStyle = slotsRef.current[i] !== null ? "#48DBFB" : "#30363d";
