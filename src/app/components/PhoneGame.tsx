@@ -5,7 +5,7 @@ import FanCursor from "./FanCursor";
 
 const NUM_SLOTS = 10;
 const BALL_R = 22;
-const SPAWN_MS = 1400;
+const SPAWN_MS = 1050;
 const GRAVITY = 1.2;
 const WIND_MAX = 0.012;
 const BALL_COLORS = ["#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1","#54A0FF","#5F27CD","#EE5A24","#009432","#C4E538"];
@@ -74,7 +74,7 @@ export default function PhoneGame() {
 
     const slotW = Math.min(60, (W - 40) / NUM_SLOTS);
     const slotX = (W - slotW * NUM_SLOTS) / 2;
-    const slotY = H - 540;
+    const slotY = H - 405;
 
     for (let i = 0; i <= NUM_SLOTS; i++) {
       const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY, 4, 80, { isStatic: true });
@@ -129,7 +129,7 @@ export default function PhoneGame() {
 
         const bx = ball.body.position.x;
         const slotIdx = Math.floor((bx - slotX) / slotW);
-        if (slotIdx >= 0 && slotIdx < NUM_SLOTS && ball.body.position.y > slotY - 60 && ball.body.velocity.y > 0) {
+        if (slotIdx >= 0 && slotIdx < NUM_SLOTS && ball.body.position.y > slotY - 60 && ball.body.position.y < slotY + BALL_R && ball.body.velocity.y > 0) {
           if (slotsRef.current[slotIdx] === null) {
             slotsRef.current[slotIdx] = ball.digit;
             const newSlots = [...slotsRef.current] as (number | null)[];
@@ -190,10 +190,10 @@ export default function PhoneGame() {
       ctx.textBaseline = "top";
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 52px sans-serif";
-      ctx.fillText("Input your number!", W / 2, 28);
+      ctx.fillText("!הכנס את המספר שלך", W / 2, 28);
       ctx.fillStyle = "rgba(255,255,255,0.18)";
       ctx.font = "24px sans-serif";
-      ctx.fillText("...if you can", W / 2, 92);
+      ctx.fillText("...אם תוכל", W / 2, 92);
 
       // Bottom slots with hyphen after slot 3
       for (let i = 0; i < NUM_SLOTS; i++) {
@@ -291,8 +291,8 @@ export default function PhoneGame() {
       {completed && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
           <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8 text-center max-w-sm mx-4">
-            <h2 className="text-3xl font-bold text-white mb-2">🎉 Number Complete!</h2>
-            <p className="text-[#8b949e] mb-2">Your phone number is:</p>
+            <h2 className="text-3xl font-bold text-white mb-2">!🎉 המספר הושלם</h2>
+            <p className="text-[#8b949e] mb-2">:מספר הטלפון שלך</p>
             <p className="text-2xl font-mono text-[#48DBFB] mb-6 tracking-widest">
               {`${phoneNumber.slice(0,3).map(d => d !== null ? String(d) : "·").join("")} - ${phoneNumber.slice(3).map(d => d !== null ? String(d) : "·").join("")}`}
             </p>
@@ -300,7 +300,7 @@ export default function PhoneGame() {
               onClick={resetGame}
               className="bg-[#238636] hover:bg-[#2ea043] text-white font-semibold px-6 py-3 rounded-lg transition-colors"
             >
-              Play Again
+              שחק שוב
             </button>
           </div>
         </div>
