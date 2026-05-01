@@ -74,7 +74,7 @@ export default function PhoneGame() {
 
     const slotW = Math.min(60, (W - 40) / NUM_SLOTS);
     const slotX = (W - slotW * NUM_SLOTS) / 2;
-    const slotY = H - 180;
+    const slotY = H - 540;
 
     for (let i = 0; i <= NUM_SLOTS; i++) {
       const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY, 4, 80, { isStatic: true });
@@ -84,27 +84,22 @@ export default function PhoneGame() {
     spawnTimerRef.current = setInterval(() => {
       const digit = Math.floor(Math.random() * 10);
       const color = BALL_COLORS[digit];
-      const spawnType = Math.random();
       let x: number, y: number, vx: number, vy: number;
+      const fromLeft = Math.random() < 0.5;
+      const slotAreaRight = slotX + slotW * NUM_SLOTS;
 
-      if (spawnType < 0.4) {
-        // Left side — shoot inward with slight upward angle
-        x = -BALL_R;
-        y = BALL_R + Math.random() * (H * 0.6);
-        vx = Math.random() * 7 + 5;
-        vy = -(Math.random() * 3);
-      } else if (spawnType < 0.8) {
-        // Right side — shoot inward with slight upward angle
-        x = W + BALL_R;
-        y = BALL_R + Math.random() * (H * 0.6);
-        vx = -(Math.random() * 7 + 5);
-        vy = -(Math.random() * 3);
+      if (fromLeft) {
+        // Top-left zone: above and left of the slot boxes
+        x = BALL_R + Math.random() * Math.max(BALL_R, slotX - BALL_R * 2);
+        y = -BALL_R;
+        vx = (Math.random() - 0.5) * 4;
+        vy = Math.random() * 3 + 2;
       } else {
-        // Bottom — shoot upward at an angle
-        x = slotX + Math.random() * (slotW * NUM_SLOTS);
-        y = H + BALL_R;
-        vx = (Math.random() - 0.5) * 8;
-        vy = -(Math.random() * 10 + 14);
+        // Top-right zone: above and right of the slot boxes
+        x = slotAreaRight + BALL_R + Math.random() * Math.max(BALL_R, W - slotAreaRight - BALL_R * 2);
+        y = -BALL_R;
+        vx = (Math.random() - 0.5) * 4;
+        vy = Math.random() * 3 + 2;
       }
 
       const body = Matter.Bodies.circle(x, y, BALL_R, {
@@ -189,6 +184,16 @@ export default function PhoneGame() {
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#0d1117";
       ctx.fillRect(0, 0, W, H);
+
+      // Title
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 52px sans-serif";
+      ctx.fillText("Input your number!", W / 2, 28);
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.font = "24px sans-serif";
+      ctx.fillText("...if you can", W / 2, 92);
 
       // Bottom slots with hyphen after slot 3
       for (let i = 0; i < NUM_SLOTS; i++) {
