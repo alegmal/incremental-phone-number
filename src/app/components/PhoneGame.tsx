@@ -36,6 +36,7 @@ export default function PhoneGame() {
   const mouseRef = useRef({ x: 0, y: 0 });
   const rafRef = useRef<number>(0);
   const spawnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const spawnCountRef = useRef(0);
   const [completed, setCompleted] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<(number | null)[]>(Array(NUM_SLOTS).fill(null));
 
@@ -48,6 +49,7 @@ export default function PhoneGame() {
     ballsRef.current = [];
     slotsRef.current = Array(NUM_SLOTS).fill(null);
     confettiRef.current = [];
+    spawnCountRef.current = 0;
     setCompleted(false);
     setPhoneNumber(Array(NUM_SLOTS).fill(null));
   }, []);
@@ -72,37 +74,50 @@ export default function PhoneGame() {
 
     const slotW = Math.min(60, (W - 40) / NUM_SLOTS);
     const slotX = (W - slotW * NUM_SLOTS) / 2;
-    const slotY = H - 60;
+    const slotY = H - 180;
 
     for (let i = 0; i <= NUM_SLOTS; i++) {
       const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY, 4, 80, { isStatic: true });
       Matter.World.add(world, sep);
     }
 
-    let spawnCount = 0;
     spawnTimerRef.current = setInterval(() => {
-      if (spawnCount >= 50) {
-        clearInterval(spawnTimerRef.current!);
-        return;
-      }
       const digit = Math.floor(Math.random() * 10);
       const color = BALL_COLORS[digit];
-      const fromLeft = Math.random() < 0.5;
-      const x = fromLeft ? -BALL_R : W + BALL_R;
-      const y = BALL_R + Math.random() * (H * 0.5);
+      const spawnType = Math.random();
+      let x: number, y: number, vx: number, vy: number;
+
+      if (spawnType < 0.4) {
+        // Left side — shoot inward with slight upward angle
+        x = -BALL_R;
+        y = BALL_R + Math.random() * (H * 0.6);
+        vx = Math.random() * 7 + 5;
+        vy = -(Math.random() * 3);
+      } else if (spawnType < 0.8) {
+        // Right side — shoot inward with slight upward angle
+        x = W + BALL_R;
+        y = BALL_R + Math.random() * (H * 0.6);
+        vx = -(Math.random() * 7 + 5);
+        vy = -(Math.random() * 3);
+      } else {
+        // Bottom — shoot upward at an angle
+        x = slotX + Math.random() * (slotW * NUM_SLOTS);
+        y = H + BALL_R;
+        vx = (Math.random() - 0.5) * 8;
+        vy = -(Math.random() * 10 + 14);
+      }
+
       const body = Matter.Bodies.circle(x, y, BALL_R, {
         restitution: 0.4,
         friction: 0.1,
         frictionAir: 0.01,
-        label: `ball-${digit}-${spawnCount}`,
+        label: `ball-${digit}-${spawnCountRef.current}`,
       });
       Matter.World.add(world, body);
-      Matter.Body.setVelocity(body, {
-        x: fromLeft ? Math.random() * 6 + 3 : -(Math.random() * 6 + 3),
-        y: Math.random() * 2,
-      });
+      Matter.Body.setVelocity(body, { x, y: vy });
+      Matter.Body.setVelocity(body, { x: vx, y: vy });
       ballsRef.current.push({ body, digit, color });
-      spawnCount++;
+      spawnCountRef.current++;
     }, SPAWN_MS);
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -120,7 +135,7 @@ export default function PhoneGame() {
 
         const bx = ball.body.position.x;
         const slotIdx = Math.floor((bx - slotX) / slotW);
-        if (slotIdx >= 0 && slotIdx < NUM_SLOTS && ball.body.position.y > H - 140) {
+        if (slotIdx >= 0 && slotIdx < NUM_SLOTS && ball.body.position.y > slotY - 60) {
           if (slotsRef.current[slotIdx] === null) {
             slotsRef.current[slotIdx] = ball.digit;
             const newSlots = [...slotsRef.current] as (number | null)[];
@@ -173,12 +188,22 @@ export default function PhoneGame() {
     const loop = () => {
       Matter.Engine.update(engine, 1000 / 60);
       ctx.clearRect(0, 0, W, H);
-
       ctx.fillStyle = "#0d1117";
       ctx.fillRect(0, 0, W, H);
 
+      // Bottom slots with hyphen after slot 3
       for (let i = 0; i < NUM_SLOTS; i++) {
         const sx = slotX + i * slotW;
+
+        // Draw hyphen between slot 2 and 3
+        if (i === 3) {
+          ctx.fillStyle = "#8b949e";
+          ctx.font = "bold 22px monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("-", sx - slotW * 0.25, slotY - BALL_R);
+        }
+
         ctx.strokeStyle = slotsRef.current[i] !== null ? "#48DBFB" : "#30363d";
         ctx.lineWidth = 2;
         ctx.strokeRect(sx + 2, slotY - BALL_R * 2 - 4, slotW - 4, BALL_R * 2 + 4);
@@ -198,6 +223,7 @@ export default function PhoneGame() {
         ctx.fillText(String(i + 1), sx + slotW / 2, slotY + 8);
       }
 
+      // Balls
       ballsRef.current.forEach(ball => {
         if (ball.body.isStatic) return;
         const { x, y } = ball.body.position;
@@ -224,6 +250,7 @@ export default function PhoneGame() {
         ctx.restore();
       });
 
+      // Confetti
       confettiRef.current = confettiRef.current.filter(c => c.y < H + 20);
       confettiRef.current.forEach(c => {
         c.x += c.vx;
@@ -238,45 +265,6 @@ export default function PhoneGame() {
         ctx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size / 2);
         ctx.restore();
       });
-
-      const displayY = 30;
-      const digitW = 32;
-      const gap = 4;
-      const hyphenW = 28;
-      const totalW = NUM_SLOTS * digitW + (NUM_SLOTS - 1) * gap + hyphenW;
-      const startX = (W - totalW) / 2;
-
-      ctx.fillStyle = "#21262d";
-      ctx.beginPath();
-      ctx.roundRect(startX - 12, displayY - 8, totalW + 24, 44, 8);
-      ctx.fill();
-
-      for (let i = 0; i < NUM_SLOTS; i++) {
-        const offset = i >= 3 ? hyphenW : 0;
-        const dx = startX + i * (digitW + gap) + offset;
-
-        if (i === 3) {
-          ctx.fillStyle = "#8b949e";
-          ctx.font = "bold 20px monospace";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("-", dx - hyphenW / 2, displayY + 14);
-        }
-
-        ctx.strokeStyle = slotsRef.current[i] !== null ? "#48DBFB" : "#30363d";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.roundRect(dx, displayY, digitW, 28, 4);
-        ctx.stroke();
-
-        if (slotsRef.current[i] !== null) {
-          ctx.fillStyle = BALL_COLORS[slotsRef.current[i]!];
-          ctx.font = "bold 18px monospace";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(String(slotsRef.current[i]), dx + digitW / 2, displayY + 14);
-        }
-      }
 
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -316,4 +304,3 @@ export default function PhoneGame() {
     </div>
   );
 }
-
