@@ -5,7 +5,7 @@ import FanCursor from "./FanCursor";
 
 const NUM_SLOTS = 10;
 const BALL_R = 22;
-const SPAWN_MS = 1050;
+const SPAWN_MS = 525;
 const GRAVITY = 1.2;
 const WIND_MAX = 0.012;
 const BALL_COLORS = ["#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1","#54A0FF","#5F27CD","#EE5A24","#009432","#C4E538"];
@@ -37,24 +37,21 @@ export default function PhoneGame() {
   const rafRef = useRef<number>(0);
   const spawnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const spawnCountRef = useRef(0);
+  const [gameKey, setGameKey] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<(number | null)[]>(Array(NUM_SLOTS).fill(null));
 
   const resetGame = useCallback(() => {
-    if (spawnTimerRef.current) clearInterval(spawnTimerRef.current);
-    if (engineRef.current) {
-      Matter.World.clear(engineRef.current.world, false);
-      Matter.Engine.clear(engineRef.current);
-    }
+    setCompleted(false);
+    setPhoneNumber(Array(NUM_SLOTS).fill(null));
+    setGameKey(k => k + 1);
+  }, []);
+
+  useEffect(() => {
     ballsRef.current = [];
     slotsRef.current = Array(NUM_SLOTS).fill(null);
     confettiRef.current = [];
     spawnCountRef.current = 0;
-    setCompleted(false);
-    setPhoneNumber(Array(NUM_SLOTS).fill(null));
-  }, []);
-
-  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -77,7 +74,7 @@ export default function PhoneGame() {
     const slotY = H - 405;
 
     for (let i = 0; i <= NUM_SLOTS; i++) {
-      const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY, 4, 80, { isStatic: true });
+      const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY - 60, 4, 200, { isStatic: true });
       Matter.World.add(world, sep);
     }
 
@@ -282,12 +279,18 @@ export default function PhoneGame() {
       Matter.World.clear(world, false);
       Matter.Engine.clear(engine);
     };
-  }, []);
+  }, [gameKey]);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#0d1117]">
       <canvas ref={canvasRef} className="absolute inset-0" style={{ background: "#ffffff" }} />
       <FanCursor mouseRef={mouseRef} />
+      <button
+        onClick={resetGame}
+        className="absolute top-4 right-4 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors z-10"
+      >
+        🔄 התחל מחדש
+      </button>
       {completed && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
           <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8 text-center max-w-sm mx-4">
