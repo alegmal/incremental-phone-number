@@ -87,14 +87,20 @@ export default function PhoneGame() {
       }
       const digit = Math.floor(Math.random() * 10);
       const color = BALL_COLORS[digit];
-      const x = slotX + Math.random() * (slotW * NUM_SLOTS);
-      const body = Matter.Bodies.circle(x, 60, BALL_R, {
+      const fromLeft = Math.random() < 0.5;
+      const x = fromLeft ? -BALL_R : W + BALL_R;
+      const y = BALL_R + Math.random() * (H * 0.5);
+      const body = Matter.Bodies.circle(x, y, BALL_R, {
         restitution: 0.4,
         friction: 0.1,
         frictionAir: 0.01,
         label: `ball-${digit}-${spawnCount}`,
       });
       Matter.World.add(world, body);
+      Matter.Body.setVelocity(body, {
+        x: fromLeft ? Math.random() * 6 + 3 : -(Math.random() * 6 + 3),
+        y: Math.random() * 2,
+      });
       ballsRef.current.push({ body, digit, color });
       spawnCount++;
     }, SPAWN_MS);
@@ -235,7 +241,9 @@ export default function PhoneGame() {
 
       const displayY = 30;
       const digitW = 32;
-      const totalW = NUM_SLOTS * digitW + (NUM_SLOTS - 1) * 4;
+      const gap = 4;
+      const hyphenW = 28;
+      const totalW = NUM_SLOTS * digitW + (NUM_SLOTS - 1) * gap + hyphenW;
       const startX = (W - totalW) / 2;
 
       ctx.fillStyle = "#21262d";
@@ -244,7 +252,17 @@ export default function PhoneGame() {
       ctx.fill();
 
       for (let i = 0; i < NUM_SLOTS; i++) {
-        const dx = startX + i * (digitW + 4);
+        const offset = i >= 3 ? hyphenW : 0;
+        const dx = startX + i * (digitW + gap) + offset;
+
+        if (i === 3) {
+          ctx.fillStyle = "#8b949e";
+          ctx.font = "bold 20px monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("-", dx - hyphenW / 2, displayY + 14);
+        }
+
         ctx.strokeStyle = slotsRef.current[i] !== null ? "#48DBFB" : "#30363d";
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -284,7 +302,7 @@ export default function PhoneGame() {
             <h2 className="text-3xl font-bold text-white mb-2">🎉 Number Complete!</h2>
             <p className="text-[#8b949e] mb-2">Your phone number is:</p>
             <p className="text-2xl font-mono text-[#48DBFB] mb-6 tracking-widest">
-              {phoneNumber.map(d => d !== null ? String(d) : "·").join("")}
+              {`${phoneNumber.slice(0,3).map(d => d !== null ? String(d) : "·").join("")} - ${phoneNumber.slice(3).map(d => d !== null ? String(d) : "·").join("")}`}
             </p>
             <button
               onClick={resetGame}
@@ -298,3 +316,4 @@ export default function PhoneGame() {
     </div>
   );
 }
+
