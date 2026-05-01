@@ -5,9 +5,10 @@ import FanCursor from "./FanCursor";
 
 const NUM_SLOTS = 10;
 const BALL_R = 22;
-const SPAWN_MS = 525;
+const SPAWN_MS = 262;
 const GRAVITY = 1.2;
 const WIND_MAX = 0.012;
+const SUBSTEPS = 3;
 const BALL_COLORS = ["#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1","#54A0FF","#5F27CD","#EE5A24","#009432","#C4E538"];
 
 interface Ball {
@@ -73,10 +74,54 @@ export default function PhoneGame() {
     const slotX = (W - slotW * NUM_SLOTS) / 2;
     const slotY = H - 405;
 
+    // Tall separators (8px wide, 200px tall) prevent angled entry
     for (let i = 0; i <= NUM_SLOTS; i++) {
-      const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY - 60, 4, 200, { isStatic: true });
+      const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY - 60, 8, 200, { isStatic: true });
       Matter.World.add(world, sep);
     }
+
+    // Solid floor under slots — catches anything that tunnels past the separators
+    const slotFloor = Matter.Bodies.rectangle(
+      slotX + (slotW * NUM_SLOTS) / 2,
+      slotY + 4,
+      slotW * NUM_SLOTS - 16,
+      8,
+      { isStatic: true, label: "slot-floor" }
+    );
+    Matter.World.add(world, slotFloor);
+
+    const capture = (ball: Ball, slotIdx: number) => {
+      if (ball.body.isStatic) return;
+      if (slotsRef.current[slotIdx] !== null) return;
+
+      slotsRef.current[slotIdx] = ball.digit;
+      const newSlots = [...slotsRef.current] as (number | null)[];
+      setPhoneNumber(newSlots);
+
+      Matter.Body.setPosition(ball.body, {
+        x: slotX + slotIdx * slotW + slotW / 2,
+        y: slotY - BALL_R - 2,
+      });
+      Matter.Body.setVelocity(ball.body, { x: 0, y: 0 });
+      Matter.Body.setAngularVelocity(ball.body, 0);
+      Matter.Body.setStatic(ball.body, true);
+
+      if (newSlots.every(s => s !== null)) {
+        for (let i = 0; i < 200; i++) {
+          confettiRef.current.push({
+            x: Math.random() * W,
+            y: Math.random() * H * 0.4,
+            vx: (Math.random() - 0.5) * 6,
+            vy: Math.random() * 3 + 1,
+            color: BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)],
+            size: Math.random() * 8 + 4,
+            angle: Math.random() * Math.PI * 2,
+            spin: (Math.random() - 0.5) * 0.2,
+          });
+        }
+        setCompleted(true);
+      }
+    };
 
     spawnTimerRef.current = setInterval(() => {
       const digit = Math.floor(Math.random() * 10);
@@ -86,13 +131,11 @@ export default function PhoneGame() {
       const slotAreaRight = slotX + slotW * NUM_SLOTS;
 
       if (fromLeft) {
-        // Top-left zone: above and left of the slot boxes
         x = BALL_R + Math.random() * Math.max(BALL_R, slotX - BALL_R * 2);
         y = -BALL_R;
         vx = (Math.random() - 0.5) * 4;
         vy = Math.random() * 3 + 2;
       } else {
-        // Top-right zone: above and right of the slot boxes
         x = slotAreaRight + BALL_R + Math.random() * Math.max(BALL_R, W - slotAreaRight - BALL_R * 2);
         y = -BALL_R;
         vx = (Math.random() - 0.5) * 4;
@@ -116,6 +159,7 @@ export default function PhoneGame() {
     };
     window.addEventListener("mousemove", handleMouseMove);
 
+    // Collision-based capture (primary path)
     Matter.Events.on(engine, "collisionStart", (event) => {
       event.pairs.forEach(pair => {
         const labels = [pair.bodyA.label, pair.bodyB.label];
@@ -125,37 +169,10 @@ export default function PhoneGame() {
         if (!ball || ball.body.isStatic) return;
 
         const bx = ball.body.position.x;
+        const by = ball.body.position.y;
         const slotIdx = Math.floor((bx - slotX) / slotW);
-        if (slotIdx >= 0 && slotIdx < NUM_SLOTS && ball.body.position.y > slotY - 60 && ball.body.position.y < slotY + BALL_R && ball.body.velocity.y > 0) {
-          if (slotsRef.current[slotIdx] === null) {
-            slotsRef.current[slotIdx] = ball.digit;
-            const newSlots = [...slotsRef.current] as (number | null)[];
-            setPhoneNumber(newSlots);
-
-            Matter.Body.setPosition(ball.body, {
-              x: slotX + slotIdx * slotW + slotW / 2,
-              y: slotY - BALL_R - 2,
-            });
-            Matter.Body.setVelocity(ball.body, { x: 0, y: 0 });
-            Matter.Body.setAngularVelocity(ball.body, 0);
-            Matter.Body.setStatic(ball.body, true);
-
-            if (newSlots.every(s => s !== null)) {
-              for (let i = 0; i < 200; i++) {
-                confettiRef.current.push({
-                  x: Math.random() * W,
-                  y: Math.random() * H * 0.4,
-                  vx: (Math.random() - 0.5) * 6,
-                  vy: Math.random() * 3 + 1,
-                  color: BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)],
-                  size: Math.random() * 8 + 4,
-                  angle: Math.random() * Math.PI * 2,
-                  spin: (Math.random() - 0.5) * 0.2,
-                });
-              }
-              setCompleted(true);
-            }
-          }
+        if (slotIdx >= 0 && slotIdx < NUM_SLOTS && by > slotY - 60 && by < slotY + BALL_R && ball.body.velocity.y > 0) {
+          capture(ball, slotIdx);
         }
       });
     });
@@ -176,8 +193,34 @@ export default function PhoneGame() {
       });
     });
 
+    const drawUnderlineFor9 = (digit: number, cx: number, cy: number, r: number, color: string) => {
+      if (digit !== 9) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.35, cy + r * 0.48);
+      ctx.lineTo(cx + r * 0.35, cy + r * 0.48);
+      ctx.stroke();
+    };
+
     const loop = () => {
-      Matter.Engine.update(engine, 1000 / 60);
+      // Multiple substeps prevent tunneling through thin walls
+      for (let s = 0; s < SUBSTEPS; s++) {
+        Matter.Engine.update(engine, 1000 / 60 / SUBSTEPS);
+      }
+
+      // Per-frame zone check — fallback for balls that slip past collision events
+      ballsRef.current.forEach(ball => {
+        if (ball.body.isStatic) return;
+        const bx = ball.body.position.x;
+        const by = ball.body.position.y;
+        const slotIdx = Math.floor((bx - slotX) / slotW);
+        if (slotIdx >= 0 && slotIdx < NUM_SLOTS && by > slotY - 60 && by < slotY + BALL_R && ball.body.velocity.y > 0) {
+          capture(ball, slotIdx);
+        }
+      });
+
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#0d1117";
       ctx.fillRect(0, 0, W, H);
@@ -192,11 +235,10 @@ export default function PhoneGame() {
       ctx.font = "24px sans-serif";
       ctx.fillText("...אם תוכל", W / 2, 92);
 
-      // Bottom slots with hyphen after slot 3
+      // Slots
       for (let i = 0; i < NUM_SLOTS; i++) {
         const sx = slotX + i * slotW;
 
-        // Draw hyphen between slot 2 and 3
         if (i === 3) {
           ctx.fillStyle = "#8b949e";
           ctx.font = "bold 22px monospace";
@@ -210,11 +252,13 @@ export default function PhoneGame() {
         ctx.strokeRect(sx + 2, slotY - BALL_R * 2 - 4, slotW - 4, BALL_R * 2 + 4);
 
         if (slotsRef.current[i] !== null) {
-          ctx.fillStyle = BALL_COLORS[slotsRef.current[i]!];
+          const d = slotsRef.current[i]!;
+          ctx.fillStyle = BALL_COLORS[d];
           ctx.font = `bold ${BALL_R}px monospace`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(String(slotsRef.current[i]), sx + slotW / 2, slotY - BALL_R);
+          ctx.fillText(String(d), sx + slotW / 2, slotY - BALL_R);
+          drawUnderlineFor9(d, sx + slotW / 2, slotY - BALL_R, BALL_R, BALL_COLORS[d]);
         }
 
         ctx.fillStyle = "#8b949e";
@@ -247,8 +291,12 @@ export default function PhoneGame() {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(String(ball.digit), 0, 0);
-
         ctx.restore();
+
+        // Underline drawn in world-space so it stays horizontal regardless of ball spin
+        if (ball.digit === 9) {
+          drawUnderlineFor9(9, x, y, BALL_R, "rgba(255,255,255,0.9)");
+        }
       });
 
       // Confetti
@@ -285,9 +333,11 @@ export default function PhoneGame() {
     <div className="fixed inset-0 overflow-hidden bg-[#0d1117]">
       <canvas ref={canvasRef} className="absolute inset-0" style={{ background: "#ffffff" }} />
       <FanCursor mouseRef={mouseRef} />
+      {/* Restart button centered below the slot boxes — slotY = H-405, labels end ~18px below slotY */}
       <button
         onClick={resetGame}
-        className="absolute top-4 right-4 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors z-10"
+        style={{ bottom: "360px", left: "50%", transform: "translateX(-50%)" }}
+        className="absolute bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors z-10 whitespace-nowrap"
       >
         🔄 התחל מחדש
       </button>
