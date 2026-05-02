@@ -76,7 +76,7 @@ export default function PhoneGame() {
 
     // Tall separators (8px wide, 200px tall) prevent angled entry
     for (let i = 0; i <= NUM_SLOTS; i++) {
-      const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY - 60, 8, 200, { isStatic: true });
+      const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY, 4, 80, { isStatic: true });
       Matter.World.add(world, sep);
     }
 
@@ -131,12 +131,12 @@ export default function PhoneGame() {
       const slotAreaRight = slotX + slotW * NUM_SLOTS;
 
       if (fromLeft) {
-        x = BALL_R + Math.random() * Math.max(BALL_R, slotX - BALL_R * 2);
+        x = BALL_R + Math.random() * (slotX * 0.4);
         y = -BALL_R;
         vx = (Math.random() - 0.5) * 4;
         vy = Math.random() * 3 + 2;
       } else {
-        x = slotAreaRight + BALL_R + Math.random() * Math.max(BALL_R, W - slotAreaRight - BALL_R * 2);
+        x = W - BALL_R - Math.random() * ((W - slotAreaRight) * 0.4);
         y = -BALL_R;
         vx = (Math.random() - 0.5) * 4;
         vy = Math.random() * 3 + 2;
