@@ -331,7 +331,7 @@ export default function PhoneGame() {
       <button
         onClick={resetGame}
         style={{ bottom: "360px", left: "50%", transform: "translateX(-50%)" }}
-        className="absolute bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors z-10 whitespace-nowrap"
+        className={`absolute bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors z-10 whitespace-nowrap${completed ? " hidden" : ""}`}
       >
         🔄 התחל מחדש
       </button>
