@@ -242,10 +242,10 @@ export default function PhoneGame() {
       ctx.textBaseline = "top";
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 52px sans-serif";
-      ctx.fillText("!הכנס את מספר הטלפון שלך", W / 2, 28);
+      ctx.fillText("!מלאו את המספר טלפון שלכם", W / 2, 28);
       ctx.fillStyle = "rgba(255,255,255,0.18)";
       ctx.font = "24px sans-serif";
-      ctx.fillText("...אם תוכל", W / 2, 92);
+      ctx.fillText("אם תצליחו..", W / 2, 92);
 
       // Slots
       for (let i = 0; i < NUM_SLOTS; i++) {
