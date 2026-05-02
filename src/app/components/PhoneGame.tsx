@@ -5,7 +5,7 @@ import FanCursor from "./FanCursor";
 
 const NUM_SLOTS = 10;
 const BALL_R = 22;
-const SPAWN_MS = 262;
+const SPAWN_MS = 75;
 const GRAVITY = 1.2;
 const WIND_MAX = 0.012;
 const SUBSTEPS = 3;
@@ -193,14 +193,13 @@ export default function PhoneGame() {
       });
     });
 
-    const drawUnderlineFor9 = (digit: number, cx: number, cy: number, r: number, color: string) => {
-      if (digit !== 9) return;
+    const underline9 = (cx: number, cy: number, color: string) => {
       ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
       ctx.lineCap = "round";
       ctx.beginPath();
-      ctx.moveTo(cx - r * 0.35, cy + r * 0.48);
-      ctx.lineTo(cx + r * 0.35, cy + r * 0.48);
+      ctx.moveTo(cx - BALL_R * 0.42, cy + BALL_R * 0.72);
+      ctx.lineTo(cx + BALL_R * 0.42, cy + BALL_R * 0.72);
       ctx.stroke();
     };
 
@@ -230,7 +229,7 @@ export default function PhoneGame() {
       ctx.textBaseline = "top";
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 52px sans-serif";
-      ctx.fillText("!הכנס את המספר שלך", W / 2, 28);
+      ctx.fillText("!הכנס את מספר הטלפון שלך", W / 2, 28);
       ctx.fillStyle = "rgba(255,255,255,0.18)";
       ctx.font = "24px sans-serif";
       ctx.fillText("...אם תוכל", W / 2, 92);
@@ -238,14 +237,6 @@ export default function PhoneGame() {
       // Slots
       for (let i = 0; i < NUM_SLOTS; i++) {
         const sx = slotX + i * slotW;
-
-        if (i === 3) {
-          ctx.fillStyle = "#8b949e";
-          ctx.font = "bold 22px monospace";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("-", sx, slotY - BALL_R);
-        }
 
         ctx.strokeStyle = slotsRef.current[i] !== null ? "#48DBFB" : "#30363d";
         ctx.lineWidth = 2;
@@ -258,7 +249,7 @@ export default function PhoneGame() {
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(String(d), sx + slotW / 2, slotY - BALL_R);
-          drawUnderlineFor9(d, sx + slotW / 2, slotY - BALL_R, BALL_R, BALL_COLORS[d]);
+          if (d === 9) underline9(sx + slotW / 2, slotY - BALL_R, BALL_COLORS[d]);
         }
 
         ctx.fillStyle = "#8b949e";
@@ -291,12 +282,15 @@ export default function PhoneGame() {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(String(ball.digit), 0, 0);
-        ctx.restore();
 
-        // Underline drawn in world-space so it stays horizontal regardless of ball spin
         if (ball.digit === 9) {
-          drawUnderlineFor9(9, x, y, BALL_R, "rgba(255,255,255,0.9)");
+          ctx.save();
+          ctx.rotate(-angle);
+          underline9(0, 0, "#ffffff");
+          ctx.restore();
         }
+
+        ctx.restore();
       });
 
       // Confetti
@@ -347,7 +341,7 @@ export default function PhoneGame() {
             <h2 className="text-3xl font-bold text-white mb-2">!🎉 המספר הושלם</h2>
             <p className="text-[#8b949e] mb-2">:מספר הטלפון שלך</p>
             <p className="text-2xl font-mono text-[#48DBFB] mb-6 tracking-widest">
-              {`${phoneNumber.slice(0,3).map(d => d !== null ? String(d) : "·").join("")} - ${phoneNumber.slice(3).map(d => d !== null ? String(d) : "·").join("")}`}
+              {phoneNumber.map(d => d !== null ? String(d) : "·").join("")}
             </p>
             <button
               onClick={resetGame}
