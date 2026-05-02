@@ -7,7 +7,7 @@ const NUM_SLOTS = 10;
 const BALL_R = 22;
 const SPAWN_MS = 75;
 const GRAVITY = 1.2;
-const WIND_MAX = 0.012;
+const WIND_MAX = 0.015;
 const SUBSTEPS = 3;
 const BALL_COLORS = ["#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1","#54A0FF","#5F27CD","#EE5A24","#009432","#C4E538"];
 
@@ -60,6 +60,7 @@ export default function PhoneGame() {
 
     const W = canvas.width = window.innerWidth;
     const H = canvas.height = window.innerHeight;
+    mouseRef.current = { x: W / 2, y: H / 2 };
 
     const engine = Matter.Engine.create({ gravity: { y: GRAVITY } });
     engineRef.current = engine;
@@ -155,9 +156,21 @@ export default function PhoneGame() {
     }, SPAWN_MS);
 
     const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
+      if (document.pointerLockElement === canvas) {
+        mouseRef.current = {
+          x: Math.max(0, Math.min(W, mouseRef.current.x + e.movementX)),
+          y: Math.max(0, Math.min(H, mouseRef.current.y + e.movementY)),
+        };
+      } else {
+        mouseRef.current = { x: e.clientX, y: e.clientY };
+      }
     };
     window.addEventListener("mousemove", handleMouseMove);
+
+    const handleClick = () => {
+      if (document.pointerLockElement !== canvas) canvas.requestPointerLock();
+    };
+    canvas.addEventListener("click", handleClick);
 
     // Collision-based capture (primary path)
     Matter.Events.on(engine, "collisionStart", (event) => {
@@ -309,6 +322,16 @@ export default function PhoneGame() {
         ctx.restore();
       });
 
+      // Pointer lock hint
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      ctx.font = "13px sans-serif";
+      ctx.fillText(
+        document.pointerLockElement === canvas ? "ESC — release mouse" : "Click to lock mouse",
+        W / 2, H - 12
+      );
+
       rafRef.current = requestAnimationFrame(loop);
     };
 
@@ -318,6 +341,8 @@ export default function PhoneGame() {
       cancelAnimationFrame(rafRef.current);
       if (spawnTimerRef.current) clearInterval(spawnTimerRef.current);
       window.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("click", handleClick);
+      if (document.pointerLockElement === canvas) document.exitPointerLock();
       Matter.World.clear(world, false);
       Matter.Engine.clear(engine);
     };
