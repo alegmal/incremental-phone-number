@@ -176,6 +176,11 @@ export default function PhoneGame() {
     };
     canvas.addEventListener("click", handleClick);
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "r" || e.key === "R") resetGame();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
     // Collision-based capture (primary path)
     Matter.Events.on(engine, "collisionStart", (event) => {
       event.pairs.forEach(pair => {
@@ -332,7 +337,7 @@ export default function PhoneGame() {
       ctx.fillStyle = "rgba(255,255,255,0.35)";
       ctx.font = "13px sans-serif";
       ctx.fillText(
-        document.pointerLockElement === canvas ? "ESC — release mouse" : "Click to lock mouse",
+        document.pointerLockElement === canvas ? "ESC — release | R — restart" : "Click to lock mouse | R — restart",
         W / 2, slotY - BALL_R * 2 - 14
       );
 
@@ -346,6 +351,7 @@ export default function PhoneGame() {
       if (spawnTimerRef.current) clearInterval(spawnTimerRef.current);
       window.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("click", handleClick);
+      window.removeEventListener("keydown", handleKeyDown);
       if (document.pointerLockElement === canvas) document.exitPointerLock();
       Matter.World.clear(world, false);
       Matter.Engine.clear(engine);
