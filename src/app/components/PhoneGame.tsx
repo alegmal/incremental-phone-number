@@ -49,6 +49,10 @@ export default function PhoneGame() {
   }, []);
 
   useEffect(() => {
+    if (completed && document.pointerLockElement) document.exitPointerLock();
+  }, [completed]);
+
+  useEffect(() => {
     ballsRef.current = [];
     slotsRef.current = Array(NUM_SLOTS).fill(null);
     confettiRef.current = [];
