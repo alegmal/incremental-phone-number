@@ -5,7 +5,7 @@ import FanCursor from "./FanCursor";
 
 const NUM_SLOTS = 10;
 const BALL_R = 22;
-const SPAWN_MS = 75;
+const SPAWN_MS = 110;
 const GRAVITY = 1.2;
 const WIND_MAX = 0.015;
 const SUBSTEPS = 3;
@@ -49,10 +49,6 @@ export default function PhoneGame() {
   }, []);
 
   useEffect(() => {
-    if (completed && document.pointerLockElement) document.exitPointerLock();
-  }, [completed]);
-
-  useEffect(() => {
     ballsRef.current = [];
     slotsRef.current = Array(NUM_SLOTS).fill(null);
     confettiRef.current = [];
@@ -64,7 +60,6 @@ export default function PhoneGame() {
 
     const W = canvas.width = window.innerWidth;
     const H = canvas.height = window.innerHeight;
-    mouseRef.current = { x: W / 2, y: H / 2 };
 
     const engine = Matter.Engine.create({ gravity: { y: GRAVITY } });
     engineRef.current = engine;
@@ -160,26 +155,9 @@ export default function PhoneGame() {
     }, SPAWN_MS);
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (document.pointerLockElement === canvas) {
-        mouseRef.current = {
-          x: Math.max(0, Math.min(W, mouseRef.current.x + e.movementX)),
-          y: Math.max(0, Math.min(H, mouseRef.current.y + e.movementY)),
-        };
-      } else {
-        mouseRef.current = { x: e.clientX, y: e.clientY };
-      }
+      mouseRef.current = { x: e.clientX, y: e.clientY };
     };
     window.addEventListener("mousemove", handleMouseMove);
-
-    const handleClick = () => {
-      if (document.pointerLockElement !== canvas) canvas.requestPointerLock();
-    };
-    canvas.addEventListener("click", handleClick);
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "r" || e.key === "R") resetGame();
-    };
-    window.addEventListener("keydown", handleKeyDown);
 
     // Collision-based capture (primary path)
     Matter.Events.on(engine, "collisionStart", (event) => {
@@ -331,16 +309,6 @@ export default function PhoneGame() {
         ctx.restore();
       });
 
-      // Pointer lock hint
-      ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
-      ctx.fillStyle = "rgba(255,255,255,0.35)";
-      ctx.font = "13px sans-serif";
-      ctx.fillText(
-        document.pointerLockElement === canvas ? "ESC — release | R — restart" : "Click to lock mouse | R — restart",
-        W / 2, slotY - BALL_R * 2 - 14
-      );
-
       rafRef.current = requestAnimationFrame(loop);
     };
 
@@ -350,9 +318,7 @@ export default function PhoneGame() {
       cancelAnimationFrame(rafRef.current);
       if (spawnTimerRef.current) clearInterval(spawnTimerRef.current);
       window.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("click", handleClick);
-      window.removeEventListener("keydown", handleKeyDown);
-      if (document.pointerLockElement === canvas) document.exitPointerLock();
+
       Matter.World.clear(world, false);
       Matter.Engine.clear(engine);
     };
