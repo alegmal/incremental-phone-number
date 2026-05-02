@@ -329,7 +329,7 @@ export default function PhoneGame() {
       ctx.font = "13px sans-serif";
       ctx.fillText(
         document.pointerLockElement === canvas ? "ESC — release mouse" : "Click to lock mouse",
-        W / 2, H - 12
+        W / 2, slotY - BALL_R * 2 - 14
       );
 
       rafRef.current = requestAnimationFrame(loop);
