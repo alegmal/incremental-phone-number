@@ -242,7 +242,7 @@ export default function PhoneGame() {
       ctx.textBaseline = "top";
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 52px sans-serif";
-      ctx.fillText("!מלאו את המספר טלפון שלכם", W / 2, 28);
+      ctx.fillText("מלאו את מספר הטלפון שלכם", W / 2, 28);
       ctx.fillStyle = "rgba(255,255,255,0.18)";
       ctx.font = "24px sans-serif";
       ctx.fillText("אם תצליחו..", W / 2, 92);
