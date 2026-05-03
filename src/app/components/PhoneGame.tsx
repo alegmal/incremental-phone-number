@@ -9,7 +9,7 @@ const SPAWN_MS = 110;
 const GRAVITY = 1.2;
 const WIND_MAX = 0.015;
 const WIND_RADIUS = 200;
-const WIND_MAX_MOBILE = 1.33;
+const WIND_MAX_MOBILE = 0.5;
 const WIND_RADIUS_MOBILE = 300;
 const SUBSTEPS = 3;
 const BALL_COLORS = ["#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1","#54A0FF","#5F27CD","#EE5A24","#009432","#C4E538"];
@@ -381,13 +381,15 @@ export default function PhoneGame() {
     <div className="fixed inset-0 overflow-hidden bg-[#0d1117]" style={{ touchAction: "none" }}>
       <canvas ref={canvasRef} className="absolute inset-0" />
       <FanCursor mouseRef={mouseRef} isMobile={isMobile} />
-      <button
-        onClick={resetGame}
-        style={btnStyle}
-        className={`absolute bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors z-10 whitespace-nowrap${completed || isMobile ? " hidden" : ""}`}
-      >
-        🔄 התחל מחדש
-      </button>
+      {!isMobile && !completed && (
+        <button
+          onClick={resetGame}
+          style={btnStyle}
+          className="absolute bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors z-10 whitespace-nowrap"
+        >
+          🔄 התחל מחדש
+        </button>
+      )}
       {completed && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
           <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8 text-center max-w-sm mx-4">
