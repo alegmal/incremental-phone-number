@@ -80,7 +80,7 @@ export default function PhoneGame() {
     const world = engine.world;
 
     // Ground — placed lower on mobile so spawned balls don't overlap it
-    const groundY = isMobile ? H + 100 : H + 25;
+    const groundY = isMobile ? H + 10 : H + 25;
     const ground = Matter.Bodies.rectangle(W / 2, groundY, W * 2, 50, { isStatic: true });
     const wallL = Matter.Bodies.rectangle(-25, H / 2, 50, H * 2, { isStatic: true });
     const wallR = Matter.Bodies.rectangle(W + 25, H / 2, 50, H * 2, { isStatic: true });
@@ -169,7 +169,7 @@ export default function PhoneGame() {
       Matter.Body.setVelocity(body, { x: vx, y: vy });
       ballsRef.current.push({ body, digit, color: BALL_COLORS[digit] });
       spawnCountRef.current++;
-    }, isMobile ? SPAWN_MS * 5 : SPAWN_MS);
+    }, isMobile ? SPAWN_MS * 5.75 : SPAWN_MS);
 
     // Input: mouse on desktop, touch on mobile
     let removeInputListeners = () => {};
