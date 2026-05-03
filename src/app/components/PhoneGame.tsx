@@ -89,12 +89,12 @@ export default function PhoneGame() {
     // Desktop: boxes near bottom (open at top). Mobile: boxes near top (open at bottom).
     const slotY = isMobile ? 20 : H - 405;
 
-    // Separators guide balls into slots.
-    // Desktop: centered at slotY (channel above). Mobile: centered below slotY (channel below).
-    const sepCenterY = isMobile ? slotY + 40 : slotY;
-    for (let i = 0; i <= NUM_SLOTS; i++) {
-      const sep = Matter.Bodies.rectangle(slotX + i * slotW, sepCenterY, 4, 80, { isStatic: true });
-      Matter.World.add(world, sep);
+    // Separators only on desktop — on mobile slotW < ball diameter so they block entry
+    if (!isMobile) {
+      for (let i = 0; i <= NUM_SLOTS; i++) {
+        const sep = Matter.Bodies.rectangle(slotX + i * slotW, slotY, 4, 80, { isStatic: true });
+        Matter.World.add(world, sep);
+      }
     }
 
     // Desktop-only barrier: floor below boxes to stop balls tunnelling through bottom
@@ -165,7 +165,7 @@ export default function PhoneGame() {
       Matter.Body.setVelocity(body, { x: vx, y: vy });
       ballsRef.current.push({ body, digit, color: BALL_COLORS[digit] });
       spawnCountRef.current++;
-    }, isMobile ? SPAWN_MS * 2 : SPAWN_MS);
+    }, isMobile ? SPAWN_MS * 5 : SPAWN_MS);
 
     // Input: mouse on desktop, touch on mobile
     let removeInputListeners = () => {};
