@@ -6,7 +6,7 @@ import FanCursor from "./FanCursor";
 const NUM_SLOTS = 10;
 const BALL_R = 22;
 const SPAWN_MS = 110;
-const GRAVITY = 1.2;
+const GRAVITY = 0.72;
 const WIND_MAX = 0.015;
 const WIND_RADIUS = 200;
 const WIND_MAX_MOBILE = 0.00625;
@@ -35,6 +35,7 @@ export default function PhoneGame() {
   const rafRef = useRef<number>(0);
   const spawnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const spawnCountRef = useRef(0);
+  const selectedBallRef = useRef<Ball | null>(null);
 
   // Detect mobile synchronously so first render is correct, then track orientation changes
   const [isMobile, setIsMobile] = useState(() =>
@@ -62,6 +63,7 @@ export default function PhoneGame() {
   useEffect(() => {
     ballsRef.current = [];
     slotsRef.current = Array(NUM_SLOTS).fill(null);
+    selectedBallRef.current = null;
     confettiRef.current = [];
     spawnCountRef.current = 0;
 
@@ -112,6 +114,7 @@ export default function PhoneGame() {
     const capture = (ball: Ball, slotIdx: number) => {
       if (ball.body.isStatic) return;
       if (slotsRef.current[slotIdx] !== null) return;
+      if (selectedBallRef.current !== null && ball !== selectedBallRef.current) return;
 
       slotsRef.current[slotIdx] = ball.digit;
       const newSlots = [...slotsRef.current] as (number | null)[];
@@ -124,6 +127,7 @@ export default function PhoneGame() {
       Matter.Body.setVelocity(ball.body, { x: 0, y: 0 });
       Matter.Body.setAngularVelocity(ball.body, 0);
       Matter.Body.setStatic(ball.body, true);
+      if (selectedBallRef.current === ball) selectedBallRef.current = null;
 
       if (newSlots.every(s => s !== null)) {
         for (let i = 0; i < 200; i++) {
@@ -158,7 +162,7 @@ export default function PhoneGame() {
       const body = Matter.Bodies.circle(x, y, BALL_R, {
         restitution: 0.4,
         friction: 0.1,
-        frictionAir: 0.01,
+        frictionAir: 0.018,
         label: `ball-${digit}-${spawnCountRef.current}`,
       });
       Matter.World.add(world, body);
@@ -170,24 +174,63 @@ export default function PhoneGame() {
     // Input: mouse on desktop, touch on mobile
     let removeInputListeners = () => {};
     if (isMobile) {
-      const handleTouch = (e: TouchEvent) => {
+      let touchStartX = 0, touchStartY = 0;
+      const handleTouchStart = (e: TouchEvent) => {
+        e.preventDefault();
+        if (e.touches.length > 0) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          mouseRef.current = { x: touchStartX, y: touchStartY };
+        }
+      };
+      const handleTouchMove = (e: TouchEvent) => {
         e.preventDefault();
         if (e.touches.length > 0) {
           mouseRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         }
       };
-      canvas.addEventListener("touchmove", handleTouch, { passive: false });
-      canvas.addEventListener("touchstart", handleTouch, { passive: false });
+      const handleTouchEnd = (e: TouchEvent) => {
+        if (e.changedTouches.length > 0) {
+          const ddx = e.changedTouches[0].clientX - touchStartX;
+          const ddy = e.changedTouches[0].clientY - touchStartY;
+          if (Math.sqrt(ddx * ddx + ddy * ddy) < 10) {
+            const mx = e.changedTouches[0].clientX, my = e.changedTouches[0].clientY;
+            const tapped = ballsRef.current.find(b => {
+              if (b.body.isStatic) return false;
+              const bx = b.body.position.x - mx, by = b.body.position.y - my;
+              return Math.sqrt(bx * bx + by * by) < BALL_R + 8;
+            }) ?? null;
+            selectedBallRef.current = tapped && tapped !== selectedBallRef.current ? tapped : null;
+          }
+        }
+      };
+      canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+      canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+      canvas.addEventListener("touchend", handleTouchEnd);
       removeInputListeners = () => {
-        canvas.removeEventListener("touchmove", handleTouch);
-        canvas.removeEventListener("touchstart", handleTouch);
+        canvas.removeEventListener("touchstart", handleTouchStart);
+        canvas.removeEventListener("touchmove", handleTouchMove);
+        canvas.removeEventListener("touchend", handleTouchEnd);
       };
     } else {
       const handleMouseMove = (e: MouseEvent) => {
         mouseRef.current = { x: e.clientX, y: e.clientY };
       };
+      const handleClick = (e: MouseEvent) => {
+        const mx = e.clientX, my = e.clientY;
+        const clicked = ballsRef.current.find(b => {
+          if (b.body.isStatic) return false;
+          const bx = b.body.position.x - mx, by = b.body.position.y - my;
+          return Math.sqrt(bx * bx + by * by) < BALL_R + 8;
+        }) ?? null;
+        selectedBallRef.current = clicked && clicked !== selectedBallRef.current ? clicked : null;
+      };
       window.addEventListener("mousemove", handleMouseMove);
-      removeInputListeners = () => window.removeEventListener("mousemove", handleMouseMove);
+      window.addEventListener("click", handleClick);
+      removeInputListeners = () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("click", handleClick);
+      };
     }
 
     // Collision-based capture (primary path)
@@ -267,6 +310,9 @@ export default function PhoneGame() {
       ctx.fillStyle = "rgba(255,255,255,0.18)";
       ctx.font = isMobile ? "16px sans-serif" : "24px sans-serif";
       ctx.fillText("אם תצליחו..", W / 2, subtitleY);
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      ctx.font = isMobile ? "13px sans-serif" : "16px sans-serif";
+      ctx.fillText(isMobile ? "tap a number for easy mode" : "click a number for easy mode", W / 2, subtitleY + (isMobile ? 34 : 30));
 
       // Slots
       for (let i = 0; i < NUM_SLOTS; i++) {
@@ -330,6 +376,15 @@ export default function PhoneGame() {
           ctx.rotate(-angle);
           underline9(0, 0, "#ffffff");
           ctx.restore();
+        }
+
+        if (ball === selectedBallRef.current) {
+          const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 250);
+          ctx.beginPath();
+          ctx.arc(0, 0, BALL_R + 7, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(255,255,255,${pulse})`;
+          ctx.lineWidth = 3;
+          ctx.stroke();
         }
 
         ctx.restore();
