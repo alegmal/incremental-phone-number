@@ -6,7 +6,7 @@ import FanCursor from "./FanCursor";
 const NUM_SLOTS = 10;
 const BALL_R = 22;
 const SPAWN_MS = 110;
-const GRAVITY = 0.72;
+const GRAVITY = 0.432;
 const WIND_MAX = 0.015;
 const WIND_RADIUS = 200;
 const WIND_MAX_MOBILE = 0.00625;
