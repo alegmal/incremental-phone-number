@@ -9,7 +9,7 @@ const SPAWN_MS = 110;
 const GRAVITY = 1.2;
 const WIND_MAX = 0.015;
 const WIND_RADIUS = 200;
-const WIND_MAX_MOBILE = 4.0;
+const WIND_MAX_MOBILE = 1.33;
 const WIND_RADIUS_MOBILE = 300;
 const SUBSTEPS = 3;
 const BALL_COLORS = ["#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1","#54A0FF","#5F27CD","#EE5A24","#009432","#C4E538"];
@@ -93,7 +93,7 @@ export default function PhoneGame() {
     const slotW = Math.min(60, (W - 40) / NUM_SLOTS);
     const slotX = (W - slotW * NUM_SLOTS) / 2;
     // Desktop: boxes near bottom (open at top). Mobile: boxes near top (open at bottom).
-    const slotY = isMobile ? 405 : H - 405;
+    const slotY = isMobile ? 80 : H - 405;
 
     // Separators guide balls into slots.
     // Desktop: centered at slotY (channel above). Mobile: centered below slotY (channel below).
@@ -264,8 +264,8 @@ export default function PhoneGame() {
       ctx.fillRect(0, 0, W, H);
 
       // Title — top on desktop, bottom on mobile (away from boxes)
-      const titleY = isMobile ? H - 130 : 28;
-      const subtitleY = isMobile ? H - 84 : 92;
+      const titleY = isMobile ? H / 2 - 30 : 28;
+      const subtitleY = isMobile ? H / 2 + 20 : 92;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
       ctx.fillStyle = "#ffffff";
@@ -374,7 +374,7 @@ export default function PhoneGame() {
 
   // Restart button: below boxes on desktop, below boxes on mobile (boxes are at top on mobile)
   const btnStyle = isMobile
-    ? { top: `${405 + BALL_R * 2 + 24}px`, left: "50%", transform: "translateX(-50%)" }
+    ? { top: `${80 + BALL_R * 2 + 24}px`, left: "50%", transform: "translateX(-50%)" }
     : { bottom: "360px", left: "50%", transform: "translateX(-50%)" };
 
   return (
@@ -384,7 +384,7 @@ export default function PhoneGame() {
       <button
         onClick={resetGame}
         style={btnStyle}
-        className={`absolute bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors z-10 whitespace-nowrap${completed ? " hidden" : ""}`}
+        className={`absolute bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors z-10 whitespace-nowrap${completed || isMobile ? " hidden" : ""}`}
       >
         🔄 התחל מחדש
       </button>
