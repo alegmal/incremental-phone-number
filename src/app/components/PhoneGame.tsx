@@ -9,7 +9,7 @@ const SPAWN_MS = 110;
 const GRAVITY = 1.2;
 const WIND_MAX = 0.015;
 const WIND_RADIUS = 200;
-const WIND_MAX_MOBILE = 0.5;
+const WIND_MAX_MOBILE = 0.05;
 const WIND_RADIUS_MOBILE = 300;
 const SUBSTEPS = 3;
 const BALL_COLORS = ["#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1","#54A0FF","#5F27CD","#EE5A24","#009432","#C4E538"];
@@ -83,12 +83,6 @@ export default function PhoneGame() {
     const wallL = Matter.Bodies.rectangle(-25, H / 2, 50, H * 2, { isStatic: true });
     const wallR = Matter.Bodies.rectangle(W + 25, H / 2, 50, H * 2, { isStatic: true });
     Matter.World.add(world, [ground, wallL, wallR]);
-
-    // Mobile needs a ceiling so balls bouncing up don't escape
-    if (isMobile) {
-      const ceiling = Matter.Bodies.rectangle(W / 2, -25, W * 2, 50, { isStatic: true });
-      Matter.World.add(world, ceiling);
-    }
 
     const slotW = Math.min(60, (W - 40) / NUM_SLOTS);
     const slotX = (W - slotW * NUM_SLOTS) / 2;
