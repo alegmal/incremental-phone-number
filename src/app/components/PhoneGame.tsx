@@ -219,9 +219,7 @@ export default function PhoneGame() {
         if (dist < windRadius && dist > 0) {
           const force = windMax * (1 - dist / windRadius);
           Matter.Body.applyForce(ball.body, ball.body.position,
-            isMobile
-              ? { x: 0, y: -force }                             // pure upward blast
-              : { x: (dx / dist) * force, y: (dy / dist) * force } // radial repulsion
+            { x: (dx / dist) * force, y: (dy / dist) * force }
           );
         }
       });
