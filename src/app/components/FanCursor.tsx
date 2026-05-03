@@ -4,9 +4,10 @@ import { useEffect, useRef, RefObject } from "react";
 
 interface Props {
   mouseRef: RefObject<{ x: number; y: number }>;
+  isMobile?: boolean;
 }
 
-export default function FanCursor({ mouseRef }: Props) {
+export default function FanCursor({ mouseRef, isMobile }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const bladeRef = useRef<SVGGElement>(null);
   const rafRef = useRef<number>(0);
@@ -26,7 +27,7 @@ export default function FanCursor({ mouseRef }: Props) {
       svg.style.left = `${x - SIZE / 2}px`;
       svg.style.top = `${y - SIZE / 2}px`;
 
-      const facingAngle = x < W / 2 ? 0 : 180;
+      const facingAngle = isMobile ? -90 : (x < W / 2 ? 0 : 180);
       svg.style.transform = `rotate(${facingAngle}deg)`;
 
       bladeAngle = (bladeAngle + 8) % 360;
@@ -37,7 +38,7 @@ export default function FanCursor({ mouseRef }: Props) {
 
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [mouseRef]);
+  }, [mouseRef, isMobile]);
 
   return (
     <svg
