@@ -164,7 +164,7 @@ export default function PhoneGame() {
       Matter.Body.setVelocity(body, { x: vx, y: vy });
       ballsRef.current.push({ body, digit, color: BALL_COLORS[digit] });
       spawnCountRef.current++;
-    }, SPAWN_MS);
+    }, isMobile ? SPAWN_MS * 2 : SPAWN_MS);
 
     // Input: mouse on desktop, touch on mobile
     let removeInputListeners = () => {};
