@@ -10,7 +10,7 @@ const GRAVITY = 1.2;
 const WIND_MAX = 0.015;
 const WIND_RADIUS = 200;
 const WIND_MAX_MOBILE = 0.00625;
-const WIND_RADIUS_MOBILE = 300;
+const WIND_RADIUS_MOBILE = 150;
 const SUBSTEPS = 3;
 const BALL_COLORS = ["#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1","#54A0FF","#5F27CD","#EE5A24","#009432","#C4E538"];
 
@@ -97,16 +97,17 @@ export default function PhoneGame() {
       Matter.World.add(world, sep);
     }
 
-    // Barrier: floor on desktop, ceiling on mobile
-    const barrierY = isMobile ? slotY - 4 : slotY + 4;
-    const slotBarrier = Matter.Bodies.rectangle(
-      slotX + (slotW * NUM_SLOTS) / 2,
-      barrierY,
-      slotW * NUM_SLOTS - 16,
-      8,
-      { isStatic: true, label: isMobile ? "slot-ceiling" : "slot-floor" }
-    );
-    Matter.World.add(world, slotBarrier);
+    // Desktop-only barrier: floor below boxes to stop balls tunnelling through bottom
+    if (!isMobile) {
+      const slotBarrier = Matter.Bodies.rectangle(
+        slotX + (slotW * NUM_SLOTS) / 2,
+        slotY + 4,
+        slotW * NUM_SLOTS - 16,
+        8,
+        { isStatic: true, label: "slot-floor" }
+      );
+      Matter.World.add(world, slotBarrier);
+    }
 
     const capture = (ball: Ball, slotIdx: number) => {
       if (ball.body.isStatic) return;
